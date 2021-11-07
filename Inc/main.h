@@ -63,6 +63,9 @@ void Error_Handler(void);
 #define PUSHBUTTON_Pin GPIO_PIN_13
 #define PUSHBUTTON_GPIO_Port GPIOC
 #define PUSHBUTTON_EXTI_IRQn EXTI15_10_IRQn
+#define test_push_Pin GPIO_PIN_0
+#define test_push_GPIO_Port GPIOC
+#define test_push_EXTI_IRQn EXTI0_IRQn
 #define LED_Pin GPIO_PIN_14
 #define LED_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */

@@ -109,19 +109,19 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  if(button_flag == 1){
-		  mousehid.button = 1;
-	  	  if (USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid)) != USBD_OK){
-	  		  Error_Handler();
-	  	  }
-	  	  HAL_Delay (50);
-	  	  mousehid.button = 0;
-	  	  if (USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid)) != USBD_OK){
-			  Error_Handler();
-	  	  }
-	  	  button_flag =0;
-	  }
+
     /* USER CODE BEGIN 3 */
+	  if (button_flag==1)
+	  {
+	   mousehid.button = 1;
+	   USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid));
+	   HAL_Delay (50);
+	   mousehid.button = 0;
+
+	   USBD_HID_SendReport(&hUsbDeviceFS,&mousehid, sizeof (mousehid));
+	   button_flag =0;
+	  }
+
   }
   /* USER CODE END 3 */
 }
@@ -254,6 +254,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(PUSHBUTTON_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : test_push_Pin */
+  GPIO_InitStruct.Pin = test_push_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(test_push_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -262,6 +268,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -270,11 +279,12 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-//	if (GPIO_Pin == PUSHBUTTON_Pin)
-//	{
+	if (GPIO_Pin == test_push_Pin)
+	{
 		 HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 		 button_flag = 1;
-//	}
+	}
+
 }
 /* USER CODE END 4 */
 
