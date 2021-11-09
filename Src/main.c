@@ -279,7 +279,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if (GPIO_Pin == test_push_Pin)
+	if (GPIO_Pin == PUSHBUTTON_Pin)
 	{
 		 HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 		 button_flag = 1;
