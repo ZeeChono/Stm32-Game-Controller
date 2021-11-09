@@ -5,7 +5,10 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/lsm6dsl.c \
 ../Src/main.c \
+../Src/stm32l475e_iot01.c \
+../Src/stm32l475e_iot01_accelero.c \
 ../Src/stm32l4xx_hal_msp.c \
 ../Src/stm32l4xx_it.c \
 ../Src/syscalls.c \
@@ -16,7 +19,10 @@ C_SRCS += \
 ../Src/usbd_desc.c 
 
 OBJS += \
+./Src/lsm6dsl.o \
 ./Src/main.o \
+./Src/stm32l475e_iot01.o \
+./Src/stm32l475e_iot01_accelero.o \
 ./Src/stm32l4xx_hal_msp.o \
 ./Src/stm32l4xx_it.o \
 ./Src/syscalls.o \
@@ -27,7 +33,10 @@ OBJS += \
 ./Src/usbd_desc.o 
 
 C_DEPS += \
+./Src/lsm6dsl.d \
 ./Src/main.d \
+./Src/stm32l475e_iot01.d \
+./Src/stm32l475e_iot01_accelero.d \
 ./Src/stm32l4xx_hal_msp.d \
 ./Src/stm32l4xx_it.d \
 ./Src/syscalls.d \
