@@ -23,7 +23,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdlib.h"
+#include "stdio.h"
+#include "stm32l475e_iot01_accelero.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,10 +56,17 @@ mouseHID mousehid = {0,0,0,0};
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim2;
+
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+
+/* Button push flag ---------------------------------------------------------*/
 uint8_t button_flag=0;
+/* array storing XYZ values of the accelerometer ----------------------------*/
+int16_t acceleroResults[3];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,6 +74,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -104,8 +115,11 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+  BSP_ACCELERO_Init();
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_UART_Init(&huart1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -225,6 +239,51 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 8000000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -323,6 +382,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+ * @brief Push-button Handler
+ */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (GPIO_Pin == PUSHBUTTON_Pin)
@@ -331,6 +393,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		 button_flag = 1;
 	}
 
+}
+
+/**
+ * @brief Interrupts Handler for TIM2
+ *  At 80MHz system clock, prescaler = 0 and counter period = 8000000, this happens at 10Hz
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	// Read acclerometer values, store in acceleroResults array
+	BSP_ACCELERO_AccGetXYZ(acceleroResults);
+	// Format: (X, Y, Z), if printf is to be reconfigured (Cumbersome!)
+	// printf("(%d, %d, %d)\n", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
+	char XYZ[80];
+	sprintf(XYZ, "%d, %d, %d, End\r", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
+	HAL_UART_Transmit(&huart1, XYZ, (uint16_t)strlen(XYZ), 10);
 }
 /* USER CODE END 4 */
 

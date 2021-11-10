@@ -28,8 +28,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"
 
-/* Explicitly include the uart type ------------------------------------------*/
-#include "stm32l4xx_hal_uart.h"
+///* Explicitly include the uart type ------------------------------------------*/
+//#include "stm32l4xx_hal_uart.h"
 
 /** @addtogroup BSP
   * @{

@@ -28,11 +28,15 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pcd_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim.h \
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
  ../Inc/usb_device.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
- ../Inc/usbd_conf.h ../Inc/main.h
+ ../Inc/usbd_conf.h ../Inc/main.h ../Inc/stm32l475e_iot01_accelero.h \
+ ../Inc/stm32l475e_iot01.h ../Inc/lsm6dsl.h ../Inc/accelero.h \
+ ../Inc/gyro.h
 
 ../Inc/main.h:
 
@@ -94,6 +98,10 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
 
+../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim.h:
+
+../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:
+
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
@@ -105,3 +113,13 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 ../Inc/usbd_conf.h:
 
 ../Inc/main.h:
+
+../Inc/stm32l475e_iot01_accelero.h:
+
+../Inc/stm32l475e_iot01.h:
+
+../Inc/lsm6dsl.h:
+
+../Inc/accelero.h:
+
+../Inc/gyro.h:
