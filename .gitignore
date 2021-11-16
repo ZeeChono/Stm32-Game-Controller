@@ -1,3 +1,7 @@
+.cproject
+.project
+.mxproject
 /Debug
-.settings
+Debug/*
+.settings/*
 2021-11-07-project Debug.launch
