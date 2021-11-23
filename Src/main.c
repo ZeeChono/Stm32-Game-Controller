@@ -61,6 +61,19 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+int16_t min_xval = 128;
+int16_t max_xval = -128;
+int16_t min_yval = 128;
+int16_t max_yval = -128;
+
+int16_t newxval = 0;
+int16_t newyval = 0;
+
+int16_t x,y;
+int16_t x_prev = 0, y_prev = 0;
+int16_t del_x, del_y;
+
+char buffer[100];
 
 /* Button push flag ---------------------------------------------------------*/
 uint8_t button_flag=0;
@@ -73,8 +86,8 @@ int16_t acceleroResults[3];
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -114,8 +127,8 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
-  MX_USART1_UART_Init();
   MX_TIM2_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init();
   HAL_TIM_Base_Start_IT(&htim2);
@@ -129,6 +142,94 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  BSP_ACCELERO_AccGetXYZ(acceleroResults);
+	  x = acceleroResults[0];
+	  y = acceleroResults[1];
+
+
+	/* Differential algorithm --------------------------------*/
+	  // set x movement
+//	  del_x = x - x_prev;
+//	  if (del_x < -100){
+//		  mousehid.mouse_x = del_x/2;
+//	  }
+//	  else if (del_x > 100){
+//		  mousehid.mouse_x = del_x/2;
+//	  }
+//	  else{
+//		  mousehid.mouse_x = 0;
+//	  }
+//	  // set y movement
+//	  del_y = y - y_prev;
+//	  if (del_y < -100){
+//		  mousehid.mouse_y = del_y/3;
+//	  }
+//	  else if (del_y > 100){
+//		  mousehid.mouse_y = del_y/3;
+//	  }
+//	  else {
+//		  mousehid.mouse_y = 0;
+//	  }
+
+	/* Absolute algorithm ----------------------------------------*/
+	  if (x < -200){
+		  mousehid.mouse_x = x/10;
+	  }
+	  else if (x > 200){
+		  mousehid.mouse_x = x/10;
+	  }
+	  else {
+		  mousehid.mouse_x = 0;
+	  }
+
+	  if (y < -200){
+		  mousehid.mouse_y = y/5;
+	  }
+	  else if(y > 200){
+		  mousehid.mouse_y = y/5;
+	  }
+	  else {
+		  mousehid.mouse_y = 0;
+	  }
+
+//	  sprintf(buffer, "%d, %d, %d, End\r", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
+//      HAL_UART_Transmit(&huart1, buffer, (uint16_t)strlen(buffer), 10);
+//
+//	  if (x < min_xval)
+//	  {
+//		  newxval = x - min_xval;
+//	  }
+//
+//	  else if (x > max_xval)
+//	  {
+//		  newxval = x - max_xval;
+//	  }
+//
+//	  if (y < min_yval)
+//	  {
+//		  newyval = y - min_yval;
+//	  }
+//
+//	  else if (y > max_yval)
+//	  {
+//		  newyval = y - max_yval;
+//	  }
+//
+//	  if ((newxval > 20) || (newxval <-20))
+//	  {
+//		  mousehid.mouse_y = (newxval/3);
+//	  }
+//
+//	  else mousehid.mouse_y = 0;
+//
+//	  if ((newyval > 20) || (newyval <-20))
+//	  {
+//		  mousehid.mouse_x= (newyval)/3;
+//	  }
+//
+//	  else mousehid.mouse_x = 0;
+
 	  if (button_flag==1)
 	  {
 	   mousehid.button = 1;
@@ -139,6 +240,12 @@ int main(void)
 	   USBD_HID_SendReport(&hUsbDeviceFS,&mousehid, sizeof (mousehid));
 	   button_flag =0;
 	  }
+	  USBD_HID_SendReport(&hUsbDeviceFS,&mousehid, sizeof (mousehid));
+
+//	  x_prev = x;
+//	  y_prev = y;
+
+	  HAL_Delay(100);
 
   }
   /* USER CODE END 3 */
@@ -373,10 +480,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
@@ -389,8 +496,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (GPIO_Pin == PUSHBUTTON_Pin)
 	{
-		 HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 		 button_flag = 1;
+//		 HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+//		 mousehid.button = 1;
+//		 USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid));
+//		 HAL_Delay(10);
+//		 mousehid.button = 0;
+//		 USBD_HID_SendReport(&hUsbDeviceFS,&mousehid, sizeof (mousehid));
 	}
 
 }
@@ -402,9 +514,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	// Read acclerometer values, store in acceleroResults array
+//	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 	BSP_ACCELERO_AccGetXYZ(acceleroResults);
-	// Format: (X, Y, Z), if printf is to be reconfigured (Cumbersome!)
-	// printf("(%d, %d, %d)\n", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
+//	// Format: (X, Y, Z), if printf is to be reconfigured (Cumbersome!)
+//	// printf("(%d, %d, %d)\n", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
 	char XYZ[80];
 	sprintf(XYZ, "%d, %d, %d, End\r", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
 	HAL_UART_Transmit(&huart1, XYZ, (uint16_t)strlen(XYZ), 10);
