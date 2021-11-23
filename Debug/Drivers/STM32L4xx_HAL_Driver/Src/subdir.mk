@@ -7,6 +7,8 @@
 C_SRCS += \
 ../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
 ../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.c \
+../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac.c \
+../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac_ex.c \
 ../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma.c \
 ../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma_ex.c \
 ../Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_exti.c \
@@ -31,6 +33,8 @@ C_SRCS += \
 OBJS += \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.o \
+./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac.o \
+./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac_ex.o \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma.o \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma_ex.o \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_exti.o \
@@ -55,6 +59,8 @@ OBJS += \
 C_DEPS += \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.d \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.d \
+./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac.d \
+./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dac_ex.d \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma.d \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma_ex.d \
 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_exti.d \
@@ -79,5 +85,5 @@ C_DEPS += \
 
 # Each subdirectory must supply rules for building sources it contributes
 Drivers/STM32L4xx_HAL_Driver/Src/%.o: ../Drivers/STM32L4xx_HAL_Driver/Src/%.c Drivers/STM32L4xx_HAL_Driver/Src/subdir.mk
-	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L475xx -c -I../Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L475xx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
 
