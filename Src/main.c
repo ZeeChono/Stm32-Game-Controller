@@ -175,31 +175,6 @@ int main(void)
 	  x = acceleroResults[0];
 	  y = acceleroResults[1];
 
-
-	/* Differential algorithm --------------------------------*/
-	  // set x movement
-//	  del_x = x - x_prev;
-//	  if (del_x < -100){
-//		  mousehid.mouse_x = del_x/2;
-//	  }
-//	  else if (del_x > 100){
-//		  mousehid.mouse_x = del_x/2;
-//	  }
-//	  else{
-//		  mousehid.mouse_x = 0;
-//	  }
-//	  // set y movement
-//	  del_y = y - y_prev;
-//	  if (del_y < -100){
-//		  mousehid.mouse_y = del_y/3;
-//	  }
-//	  else if (del_y > 100){
-//		  mousehid.mouse_y = del_y/3;
-//	  }
-//	  else {
-//		  mousehid.mouse_y = 0;
-//	  }
-
 	/* Absolute algorithm ----------------------------------------*/
 	  if (x < -200){
 		  mousehid.mouse_x = x/10;
@@ -212,51 +187,15 @@ int main(void)
 	  }
 
 	  if (y < -200){
-		  mousehid.mouse_y = y/5;
+		  mousehid.mouse_y = y/8;
 	  }
 	  else if(y > 200){
-		  mousehid.mouse_y = y/5;
+		  mousehid.mouse_y = y/8;
 	  }
 	  else {
 		  mousehid.mouse_y = 0;
 	  }
 
-//	  sprintf(buffer, "%d, %d, %d, End\r", acceleroResults[0], acceleroResults[1], acceleroResults[2]);
-//      HAL_UART_Transmit(&huart1, buffer, (uint16_t)strlen(buffer), 10);
-//
-//	  if (x < min_xval)
-//	  {
-//		  newxval = x - min_xval;
-//	  }
-//
-//	  else if (x > max_xval)
-//	  {
-//		  newxval = x - max_xval;
-//	  }
-//
-//	  if (y < min_yval)
-//	  {
-//		  newyval = y - min_yval;
-//	  }
-//
-//	  else if (y > max_yval)
-//	  {
-//		  newyval = y - max_yval;
-//	  }
-//
-//	  if ((newxval > 20) || (newxval <-20))
-//	  {
-//		  mousehid.mouse_y = (newxval/3);
-//	  }
-//
-//	  else mousehid.mouse_y = 0;
-//
-//	  if ((newyval > 20) || (newyval <-20))
-//	  {
-//		  mousehid.mouse_x= (newyval)/3;
-//	  }
-//
-//	  else mousehid.mouse_x = 0;
 
 	  if (button_flag==1)
 	  {
@@ -270,11 +209,8 @@ int main(void)
 	  }
 	  USBD_HID_SendReport(&hUsbDeviceFS,&mousehid, sizeof (mousehid));
 
-//	  x_prev = x;
-//	  y_prev = y;
 
-	  HAL_Delay(10);
-
+	  HAL_Delay(50);
   }
   /* USER CODE END 3 */
 }
