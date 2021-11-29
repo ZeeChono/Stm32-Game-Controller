@@ -152,20 +152,19 @@ int main(void)
 	  }
 
 	  if(VR[0] < 2500){		// w
-		  keyboardHID.keycodes[2] = 26;
+		  keyboardHID.keycodes[4] = 26;
 	  } else if(VR[0] > 3500){		// s
-		  keyboardHID.keycodes[2] = 22;
+		  keyboardHID.keycodes[4] = 22;
 	  } else {
-		  y_flag = 0;
-		  keyboardHID.keycodes[2] = 0;
+		  keyboardHID.keycodes[4] = 0;
 	  }
 
 	  if(VR[1] < 2500){		// a
-		  keyboardHID.keycodes[3] = 4;
+		  keyboardHID.keycodes[5] = 4;
 	  } else if(VR[1] > 3500 || (VR[1] < 3035 && VR[1] > 3030)){		// d
-		  keyboardHID.keycodes[3] = 7;
+		  keyboardHID.keycodes[5] = 7;
 	  } else {
-		  keyboardHID.keycodes[3] = 0;
+		  keyboardHID.keycodes[5] = 0;
 	  }
 
 	  USBD_HID_SendReport(&hUsbDeviceFS,&keyboardHID, sizeof (keyboardHID_t));
@@ -515,17 +514,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t  GPIO_Pin){
 
 	if(GPIO_Pin == GPIO_PIN_4){
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_4)){
-			keyboardHID.keycodes[1] = 29;
+			keyboardHID.keycodes[2] = 29;
 		} else {
-			keyboardHID.keycodes[1] = 0;
+			keyboardHID.keycodes[2] = 0;
 		}
 	}
 
 	if(GPIO_Pin == GPIO_PIN_5){
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5)){
-			keyboardHID.keycodes[1] = 14;
+			keyboardHID.keycodes[3] = 14;
 		} else {
-			keyboardHID.keycodes[1] = 0;
+			keyboardHID.keycodes[3] = 0;
 		}
 	}
 
