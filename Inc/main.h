@@ -10,10 +10,10 @@
   * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
+  * This software component is licensed by ST under BSD 3-Clause license,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
@@ -58,14 +58,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED_ERROR_Pin GPIO_PIN_3
-#define LED_ERROR_GPIO_Port GPIOE
-#define PUSHBUTTON_Pin GPIO_PIN_13
-#define PUSHBUTTON_GPIO_Port GPIOC
-#define PUSHBUTTON_EXTI_IRQn EXTI15_10_IRQn
-#define test_push_Pin GPIO_PIN_0
-#define test_push_GPIO_Port GPIOC
-#define test_push_EXTI_IRQn EXTI0_IRQn
 #define LED_Pin GPIO_PIN_14
 #define LED_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
