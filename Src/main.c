@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include "stm32l475e_iot01_accelero.h"
 #include "usbd_hid.h"
+#include "arm_math.h"
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +49,7 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define size 1500
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,7 +60,13 @@ typedef struct {
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+DAC_HandleTypeDef hdac1;
+DMA_HandleTypeDef hdma_dac_ch1;
+
 I2C_HandleTypeDef hi2c1;
+
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart1;
 
@@ -68,6 +77,9 @@ int n;
 char buffer[100];
 int16_t x,y;
 uint32_t VR[2];
+
+int sleepTimer = 0;
+uint8_t button_flag = 0;
 
 /* array storing XYZ values of the accelerometer ----------------------------*/
 int16_t acceleroResults[3];
@@ -84,12 +96,16 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_DAC1_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint8_t sineValue[size];
 /* USER CODE END 0 */
 
 /**
@@ -99,6 +115,10 @@ static void MX_I2C1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  for(int i = 0; i < size; i++){
+	  sineValue[i] = 85 * arm_sin_f32(2*M_PI/20 * i) + 128;
+  }
+
   keyboardHID.id = 1;
   mouseHID.id = 2;
   /* USER CODE END 1 */
@@ -129,48 +149,94 @@ int main(void)
   MX_ADC1_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
+  MX_DAC1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init();
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim4);
+  HAL_UART_Init(&huart1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  // start the led indicating the board working status
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1);
   while (1)
   {
+	  // check if it is proper to sleep
+	  if (sleepTimer >= 100) {
+	 		  // Sleep
+	 		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 0);
+	 		  HAL_TIM_Base_Stop(&htim2);
+	 		  HAL_SuspendTick();
+
+	 		  HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+
+	 		  // Wake up
+	 		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1);
+	 		  HAL_ResumeTick();
+	 		  HAL_TIM_Base_Start_IT(&htim2);
+	 		  sleepTimer = 0;
+	 	  }
+
+
+
 	  HAL_ADC_Start_DMA(&hadc1, VR, 2);
 
+	  // read the accelerometer for mouse movement
 	  BSP_ACCELERO_AccGetXYZ(acceleroResults);
 	  x = acceleroResults[0];
 	  y = acceleroResults[1];
-
+	  // absolute algorithm to calculate movement of mouse
 	  if (abs(x) > 200 || abs(y) > 200){
 		  mouseHID.mouse_x = x/17;
 		  mouseHID.mouse_y = -y/14;
+		  // captured input from mouse, reset sleepTimer
+		  sleepTimer = 0;
 	  } else {
 		  mouseHID.mouse_x = 0;
 		  mouseHID.mouse_y = 0;
 	  }
 
+	  // joystick movement algorithm
 	  if(VR[0] < 2500){		// w
 		  keyboardHID.keycodes[4] = 26;
+		  sleepTimer = 0;
 	  } else if(VR[0] > 3500){		// s
 		  keyboardHID.keycodes[4] = 22;
+		  sleepTimer = 0;
 	  } else {
 		  keyboardHID.keycodes[4] = 0;
 	  }
 
 	  if(VR[1] < 2500){		// a
 		  keyboardHID.keycodes[5] = 4;
+		  sleepTimer = 0;
 	  } else if(VR[1] > 3500 || (VR[1] < 3035 && VR[1] > 3030)){		// d
 		  keyboardHID.keycodes[5] = 7;
+		  sleepTimer = 0;
 	  } else {
 		  keyboardHID.keycodes[5] = 0;
 	  }
 
-	  USBD_HID_SendReport(&hUsbDeviceFS,&keyboardHID, sizeof (keyboardHID_t));
-	  HAL_Delay(50);
-	  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
+
+	  if(button_flag == 1){
+		  mouseHID.button = 1;
+		  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
+		  HAL_Delay(10);
+		  mouseHID.button = 0;
+		  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
+		  button_flag = 0;
+	  } else {
+		  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
+	  }
+
 	  HAL_Delay(20);
+	  USBD_HID_SendReport(&hUsbDeviceFS,&keyboardHID, sizeof (keyboardHID_t));
+	  HAL_Delay(20);
+
 
 //	  n = sprintf(buffer, "VR: X: %lu, Y: %lu         \r", VR[1], VR[0]);
 //	  HAL_UART_Transmit(&huart1, buffer, n, 10);
@@ -330,6 +396,47 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief DAC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DAC1_Init(void)
+{
+
+  /* USER CODE BEGIN DAC1_Init 0 */
+
+  /* USER CODE END DAC1_Init 0 */
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN DAC1_Init 1 */
+
+  /* USER CODE END DAC1_Init 1 */
+  /** DAC Initialization
+  */
+  hdac1.Instance = DAC1;
+  if (HAL_DAC_Init(&hdac1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** DAC channel OUT1 config
+  */
+  sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_T4_TRGO;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
+  sConfig.DAC_UserTrimming = DAC_TRIMMING_FACTORY;
+  if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DAC1_Init 2 */
+
+  /* USER CODE END DAC1_Init 2 */
+
+}
+
+/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -372,6 +479,96 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 8000000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 1814;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -423,6 +620,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -438,15 +638,21 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PC2 PC3 PC4 PC5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PC2 PC3 PC4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -495,6 +701,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t  GPIO_Pin){
 //		}
 //	}
 
+	// start the DMA of the DAC
+//	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) sineValue, size, DAC_ALIGN_8B_R);
+
 	if(GPIO_Pin == GPIO_PIN_2){
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2)){
 //			HID_buffer[2] = 22;
@@ -521,15 +731,26 @@ void HAL_GPIO_EXTI_Callback(uint16_t  GPIO_Pin){
 	}
 
 	if(GPIO_Pin == GPIO_PIN_5){
-		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5)){
-			keyboardHID.keycodes[3] = 14;
-		} else {
-			keyboardHID.keycodes[3] = 0;
-		}
+		button_flag = 1;
 	}
 
 	USBD_HID_SendReport(&hUsbDeviceFS,&keyboardHID, sizeof (keyboardHID_t));
 }
+
+/**
+ * @brief Interrupts Handler for TIM2
+ *  At 80MHz system clock, prescaler = 0 and counter period = 8000000, this happens at 10Hz
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	sleepTimer++;
+//	// Format: (X, Y, Z), if printf is to be reconfigured (Cumbersome!)
+	char XYZ[80];
+	sprintf(XYZ, "%d, End\r", sleepTimer);
+	HAL_UART_Transmit(&huart1, XYZ, (uint16_t)strlen(XYZ), 10);
+}
+
+
 /* USER CODE END 4 */
 
 /**
