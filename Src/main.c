@@ -31,6 +31,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+/* Struct for mouse ----------------------------------------------------------*/
 typedef struct {
 	uint8_t id;
 	uint8_t button;
@@ -39,6 +40,7 @@ typedef struct {
 	int8_t wheel;
 } mouseHID_t;
 
+/* Struct for keyboard -------------------------------------------------------*/
 typedef struct {
 	uint8_t id;
 	uint8_t modifiers;
@@ -49,6 +51,7 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+/* size of DAC array ---------------------------------------------------------*/
 #define size 1500
 /* USER CODE END PD */
 
@@ -72,20 +75,13 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
-
-int n;
-char buffer[100];
-int16_t x,y;
-uint32_t VR[2];
-
-int sleepTimer = 0;
-uint8_t button_flag = 0;
-
-/* array storing XYZ values of the accelerometer ----------------------------*/
-int16_t acceleroResults[3];
-
-keyboardHID_t keyboardHID;
-mouseHID_t mouseHID;
+int16_t acceleroResults[3];	// temporary array to hold accelerometer readings
+int16_t x,y;				// accelerometer readings
+uint32_t VR[2];				// joystick readings
+int sleepTimer = 0;			// timer for entering sleep mode
+uint8_t button_flag = 0;	// button pressed indicator
+keyboardHID_t keyboardHID;	// id code for keyboard
+mouseHID_t mouseHID;		// id code for mouse
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,10 +111,12 @@ uint8_t sineValue[size];
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+  // initialize the DAC sound output array
   for(int i = 0; i < size; i++){
 	  sineValue[i] = 85 * arm_sin_f32(2*M_PI/20 * i) + 128;
   }
-
+  // declare the id for keyboard and mouse
   keyboardHID.id = 1;
   mouseHID.id = 2;
   /* USER CODE END 1 */
@@ -165,13 +163,12 @@ int main(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1);
   while (1)
   {
-	  // check if it is proper to sleep
+	  // check if it is proper time to sleep
 	  if (sleepTimer >= 100) {
-	 		  // Sleep
+	 		  // Go to sleep
 	 		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 0);
 	 		  HAL_TIM_Base_Stop(&htim2);
 	 		  HAL_SuspendTick();
-
 	 		  HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
 
 	 		  // Wake up
@@ -180,8 +177,6 @@ int main(void)
 	 		  HAL_TIM_Base_Start_IT(&htim2);
 	 		  sleepTimer = 0;
 	 	  }
-
-
 
 	  HAL_ADC_Start_DMA(&hadc1, VR, 2);
 
@@ -221,7 +216,7 @@ int main(void)
 		  keyboardHID.keycodes[5] = 0;
 	  }
 
-
+	  // if a button pressed event is detected
 	  if(button_flag == 1){
 		  mouseHID.button = 1;
 		  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
@@ -232,16 +227,10 @@ int main(void)
 	  } else {
 		  USBD_HID_SendReport(&hUsbDeviceFS,&mouseHID, sizeof (mouseHID_t));
 	  }
-
+	  // necessary delay between each USB sendreport
 	  HAL_Delay(20);
 	  USBD_HID_SendReport(&hUsbDeviceFS,&keyboardHID, sizeof (keyboardHID_t));
 	  HAL_Delay(20);
-
-
-//	  n = sprintf(buffer, "VR: X: %lu, Y: %lu         \r", VR[1], VR[0]);
-//	  HAL_UART_Transmit(&huart1, buffer, n, 10);
-//	  HAL_Delay(200);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -680,34 +669,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t  GPIO_Pin){
-
-//	kb_flag = 1;
-//	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-
-//	if(GPIO_Pin == GPIO_PIN_0){
-//		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0)){
-////			HID_buffer[2] = 26;
-//			HID_buffer[2] = 20;
-//		} else {
-//			HID_buffer[2] = 0;
-//		}
-//	}
-
-//	if(GPIO_Pin == GPIO_PIN_1){
-//		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_1)){
-//			HID_buffer[2] = 4;
-//		} else {
-//			HID_buffer[2] = 0;
-//		}
-//	}
-
 	// start the DMA of the DAC
 //	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*) sineValue, size, DAC_ALIGN_8B_R);
 
+	// send corresponding key to the PC at each press detected
 	if(GPIO_Pin == GPIO_PIN_2){
 		if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2)){
-//			HID_buffer[2] = 22;
 			keyboardHID.keycodes[0] = 13;
 		} else {
 			keyboardHID.keycodes[0] = 0;
@@ -729,7 +697,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t  GPIO_Pin){
 			keyboardHID.keycodes[2] = 0;
 		}
 	}
-
+	// mouse click detection
 	if(GPIO_Pin == GPIO_PIN_5){
 		button_flag = 1;
 	}
